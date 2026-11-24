@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enviar relatório por e-mail: 3 opções</title>
+<style>
+:root{--bg:#eef1f6;--card:#fff;--ink:#14213d;--mut:#5b6784;--line:#d6dce8;--acc:#0f766e;--bad:#b91c1c;--ok:#15803d}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1424;--card:#16203a;--ink:#e8edf8;--mut:#9aa7c4;--line:#27345a;--acc:#2dd4bf;--bad:#f87171;--ok:#4ade80}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif}
+main{max-width:900px;margin:auto;padding:20px 16px 64px}h1{margin:0 0 4px;font-size:1.6rem}a{color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin:14px 0}.mut{color:var(--mut);font-size:.9rem}
+button,.btn{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer}
+.p{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+[role=tab][aria-selected=true]{background:var(--ink);color:var(--bg)}
+input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:100%}
+label{display:grid;gap:3px;font-size:.88rem;color:var(--mut);margin:8px 0}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-size:.8rem;max-height:320px;white-space:pre-wrap}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.err{color:var(--bad);font-size:.88rem;min-height:1.2em}.ok{color:var(--ok)}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);max-width:440px;width:92%}
+dialog::backdrop{background:rgba(0,0,0,.5)}.pn{display:none}.pn.on{display:block}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+</style></head><body><main>
+<p><a href="index.html">Voltar ao simulador</a></p>
+<h1>Enviar relatório por e-mail</h1>
+<p class="mut">Três formas de enviar, todas gratuitas. O relatório usa a carteira que você configurou no simulador (salva neste navegador) e as manchetes do news.json.</p>
+<div class="card"><b>Prévia do relatório</b><pre id="prev">Carregando…</pre></div>
+<div class="row" role="tablist"><button role="tab" data-t="1">1. Janela + mailto / compartilhar</button><button role="tab" data-t="2">2. EmailJS</button><button role="tab" data-t="3">3. GitHub Actions + SMTP</button></div>
+
+<div class="card pn" id="t1"><b>Sem serviço externo</b>
+<p class="mut">Pergunta o e-mail, gera o PDF e abre o seu app de e-mail com destinatário, assunto e resumo preenchidos. O mailto não anexa arquivos: o PDF é baixado para você anexar. Onde o navegador permite (comum em celulares), o botão Compartilhar leva o PDF já anexado ao app de e-mail, mas nesse modo o destinatário é escolhido no app.</p>
+<button class="p" id="open1">Enviar relatório…</button></div>
+
+<div class="card pn" id="t2"><b>Envio automático pelo navegador (EmailJS)</b>
+<p class="mut">Crie conta grátis em emailjs.com, conecte seu Gmail em Email Services e crie um template com os campos <code>{{to_email}}</code> (no campo To), <code>{{subject}}</code> e <code>{{message}}</code>. A chave pública fica visível no navegador. No plano grátis, confira os limites atuais no site do EmailJS: na última consulta eram 200 envios por mês e sem anexos, então vai só o texto.</p>
+<label>Service ID<input id="sid" autocomplete="off"></label><label>Template ID<input id="tid" autocomplete="off"></label><label>Public key<input id="pk" autocomplete="off"></label><label>Enviar para<input id="to2" type="email" placeholder="nome@exemplo.com"></label>
+<div class="row"><button class="p" id="send2">Enviar agora</button><button id="save2">Salvar configuração</button></div><div class="err" id="st2" role="status"></div></div>
+
+<div class="card pn" id="t3"><b>Relatório diário automático (GitHub Actions)</b>
+<p class="mut">Roda no GitHub em dias úteis e envia para uma lista fixa, sem o visitante digitar nada. Leva indicadores e manchetes, não a carteira de cada pessoa. Passos: (1) crie os dois arquivos abaixo no repositório; (2) em Settings > Secrets and variables > Actions, crie <code>SMTP_USER</code> (seu e-mail), <code>SMTP_PASS</code> (senha de aplicativo do Gmail, nunca a senha normal) e <code>MAIL_TO</code> (destinatários separados por vírgula); (3) rode o workflow em Actions.</p>
+<div class="row"><b>.github/workflows/report.yml</b><button data-c="yml">Copiar</button></div><pre id="yml"></pre>
+<div class="row"><b>scripts/send_report.py</b><button data-c="py">Copiar</button></div><pre id="py"></pre></div>
+</main>
+
+<dialog id="dlg"><b>Para qual e-mail enviar o relatório?</b>
+<label>E-mail<input id="em" type="email" placeholder="nome@exemplo.com" autocomplete="email"></label><div class="err" id="er" role="alert"></div>
+<div class="row"><button class="p" id="b1">Abrir no app de e-mail</button><button id="b2" hidden>Compartilhar PDF anexado</button><button id="bc">Cancelar</button></div></dialog>
+
+<script type="text/plain" id="src_yml">name: Enviar relatório por e-mail
+on:
+  schedule:
+    - cron: "30 12 * * 1-5"   # 09:30 em Brasília, depois da coleta de notícias das 12:00 UTC
+  workflow_dispatch:
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python scripts/send_report.py
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+</script>
+<script type="text/plain" id="src_py">"""Envia por e-mail o relatório diário de mercado (indicadores do BCB + manchetes de news.json).
+Credenciais vêm dos Secrets do GitHub: SMTP_USER, SMTP_PASS, MAIL_TO (lista separada por vírgula).
+Opcionais: SMTP_HOST (padrão smtp.gmail.com), SMTP_PORT (padrão 465)."""
+import json, os, smtplib, ssl, datetime as dt
+from email.message import EmailMessage
+from html import escape
+
+d = json.load(open("news.json", encoding="utf-8"))
+ind, items = d.get("indicators", {}), d.get("items", [])[:10]
+names = {"selic": "Selic meta (% a.a.)", "cdi": "CDI (% a.a.)", "ipca12": "IPCA 12m (%)", "dolar": "Dólar venda (R$)"}
+hoje = dt.date.today().strftime("%d/%m/%Y")
+txt, htm = [f"Relatório diário de mercado, {hoje}", ""], [f"<h2>Relatório diário de mercado, {hoje}</h2><ul>"]
+for k, n in names.items():
+    if k in ind:
+        txt.append(f"{n}: {ind[k]['v']} ({ind[k]['d']})"); htm.append(f"<li>{n}: <b>{ind[k]['v']}</b> ({ind[k]['d']})</li>")
+htm.append("</ul><h3>Manchetes</h3><ul>"); txt += ["", "Manchetes:"]
+for i in items:
+    sel = f" [{i['sources']} fontes]" if i.get("sources", 1) > 1 else ""
+    txt.append(f"- {i['title']} ({i['source']}){sel}\n  {i['link']}")
+    htm.append(f"<li><a href=\"{escape(i['link'])}\">{escape(i['title'])}</a> ({escape(i['source'])}){sel}</li>")
+htm.append("</ul><p style='color:#666;font-size:12px'>Material educacional, não é recomendação de investimento. Confira sempre na fonte original.</p>")
+user, pwd = os.environ["SMTP_USER"], os.environ["SMTP_PASS"]
+msg = EmailMessage()
+msg["Subject"], msg["From"], msg["To"] = f"Relatório diário de mercado {hoje}", user, os.environ["MAIL_TO"]
+msg.set_content("\n".join(txt)); msg.add_alternative("".join(htm), subtype="html")
+with smtplib.SMTP_SSL(os.environ.get("SMTP_HOST", "smtp.gmail.com"), int(os.environ.get("SMTP_PORT", "465")), context=ssl.create_default_context()) as s:
+    s.login(user, pwd); s.send_message(msg)
+print("E-mail enviado para", os.environ["MAIL_TO"])
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+"use strict";
+const $=s=>document.querySelector(s),KEY="mesa-decisao-v1",EK="mesa-email-v1";
+const brl=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0}),pct=(v,d=1)=>(v*100).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d})+"%";
+const DEF={p:{capital:100000,selic:.1375,cdi:.1365,ipca:.0463,acoes:.165,vol:.21,ipcaReal:.068,turbo:1.05,custodia:.0018},a:{caixinha:.25,turbo:.15,selic:.2,ipca:.2,acoes:.2}};
+let S=DEF;try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.p)S={p:{...DEF.p,...x.p},a:{...DEF.a,...x.a}}}catch(e){}
+const NAMES={caixinha:"Caixinha 100% CDI",turbo:"Caixinha Turbo",selic:"Tesouro Selic",ipca:"Tesouro IPCA+",acoes:"Ações"};
+const ir=d=>d<=180?.225:d<=360?.2:d<=720?.175:.15;
+const gross=(k,p)=>({caixinha:p.cdi,turbo:p.cdi*p.turbo,selic:p.selic+.0006-p.custodia,ipca:(1+p.ipca)*(1+p.ipcaReal)-1,acoes:p.acoes})[k];
+const factor=(k,m,p)=>1+(Math.pow(1+gross(k,p),m/12)-1)*(1-(k==="acoes"?.15:ir(m*30)));
+const port=m=>Object.keys(S.a).reduce((s,k)=>s+S.a[k]*factor(k,m,S.p),0)*S.p.capital;
+let NEWS=null;
+function build(full){const p=S.p,hoje=new Date().toLocaleDateString("pt-BR"),v12=port(12),v60=port(60);
+ const L=[`Relatório diário de investimentos, ${hoje}`,"",`Capital: ${brl(p.capital)}`,"Alocação: "+Object.keys(S.a).filter(k=>S.a[k]>0).map(k=>`${NAMES[k]} ${pct(S.a[k],0)}`).join(", "),
+ `Valor em 12 meses (líquido): ${brl(v12)} (${pct(v12/p.capital-1)})`,`Valor em 60 meses (líquido): ${brl(v60)}`,`CDI ${pct(p.cdi,2)}, Selic ${pct(p.selic,2)}, IPCA ${pct(p.ipca,2)}`];
+ const it=(NEWS&&NEWS.items||[]).slice(0,full?10:4);if(it.length){L.push("","Manchetes:");it.forEach(i=>L.push(`- ${i.title} (${i.source})`+(full?`\n  ${i.link}`:"")))}
+ L.push("","Material educacional, não é recomendação de investimento.");return L.join("\n")}
+const subject=()=>"Relatório diário de investimentos "+new Date().toLocaleDateString("pt-BR");
+function pdfFile(){const J=window.jspdf;if(!J)throw new Error("Biblioteca de PDF não carregou.");const d=new J.jsPDF();d.setFontSize(10);let y=18;
+ d.splitTextToSize(build(true),180).forEach(l=>{if(y>280){d.addPage();y=18}d.text(l,14,y);y+=5.5});
+ return new File([d.output("blob")],"relatorio-"+new Date().toISOString().slice(0,10)+".pdf",{type:"application/pdf"})}
+const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+function dl(f){const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=f.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+function askEmail(){const e=$("#em");$("#er").textContent="";try{e.value=localStorage.getItem(EK)||""}catch(x){}$("#dlg").showModal();e.focus()}
+function getEmail(){const v=$("#em").value.trim();if(!okMail(v)){$("#er").textContent="Digite um e-mail válido, como nome@exemplo.com.";return null}try{localStorage.setItem(EK,v)}catch(x){}return v}
+$("#open1").onclick=()=>{askEmail();$("#b2").hidden=!(navigator.canShare&&navigator.canShare({files:[new File(["x"],"x.pdf",{type:"application/pdf"})]}))};
+$("#bc").onclick=()=>$("#dlg").close();
+$("#b1").onclick=()=>{const v=getEmail();if(!v)return;try{dl(pdfFile())}catch(e){$("#er").textContent=e.message;return}
+ let b=build(false);if(b.length>1200)b=b.slice(0,1200);b+="\n\n(O PDF completo foi baixado: anexe o arquivo a este e-mail.)";
+ setTimeout(()=>{location.href=`mailto:${v}?subject=${encodeURIComponent(subject())}&body=${encodeURIComponent(b)}`;$("#dlg").close()},400)};
+$("#b2").onclick=async()=>{if(!getEmail())return;try{await navigator.share({files:[pdfFile()],title:subject(),text:build(false)});$("#dlg").close()}catch(e){if(e.name!=="AbortError")$("#er").textContent="O compartilhamento falhou: use o botão do app de e-mail."}};
+function cfg(){try{return JSON.parse(localStorage.getItem("mesa-ejs-v1"))||{}}catch(e){return{}}}
+(()=>{const c=cfg();$("#sid").value=c.s||"";$("#tid").value=c.t||"";$("#pk").value=c.k||"";$("#to2").value=localStorage.getItem(EK)||""})();
+const read2=()=>({s:$("#sid").value.trim(),t:$("#tid").value.trim(),k:$("#pk").value.trim(),to:$("#to2").value.trim()});
+$("#save2").onclick=()=>{try{const c=read2();localStorage.setItem("mesa-ejs-v1",JSON.stringify({s:c.s,t:c.t,k:c.k}));$("#st2").className="err ok";$("#st2").textContent="Configuração salva neste navegador."}catch(e){$("#st2").textContent="Não foi possível salvar."}};
+$("#send2").onclick=async()=>{const c=read2(),st=$("#st2");st.className="err";
+ if(!c.s||!c.t||!c.k){st.textContent="Preencha Service ID, Template ID e Public key.";return}if(!okMail(c.to)){st.textContent="Digite um e-mail de destino válido.";return}
+ st.textContent="Enviando…";try{const r=await fetch("https://api.emailjs.com/api/v1.0/email/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({service_id:c.s,template_id:c.t,user_id:c.k,template_params:{to_email:c.to,subject:subject(),message:build(true)}})});
+  const tx=await r.text();if(r.ok){st.className="err ok";st.textContent="Enviado para "+c.to+"."}else st.textContent="Falha no envio: "+tx}catch(e){st.textContent="Sem conexão com o EmailJS."}};
+document.querySelectorAll("[role=tab]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[role=tab]").forEach(x=>x.setAttribute("aria-selected",x===b));document.querySelectorAll(".pn").forEach(p=>p.classList.toggle("on",p.id==="t"+b.dataset.t));history.replaceState(null,"","#"+b.dataset.t)});
+$("#yml").textContent=$("#src_yml").textContent.trim();$("#py").textContent=$("#src_py").textContent.trim();
+document.querySelectorAll("[data-c]").forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText($("#"+b.dataset.c).textContent);b.textContent="Copiado"}catch(e){const r=document.createRange();r.selectNodeContents($("#"+b.dataset.c));getSelection().removeAllRanges();getSelection().addRange(r);b.textContent="Selecionado: use Ctrl+C"}setTimeout(()=>b.textContent="Copiar",2000)});
+fetch("news.json?"+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null).then(d=>{NEWS=d;$("#prev").textContent=build(true)});
+$("#prev").textContent=build(true);
+const h=location.hash.slice(1);document.querySelector(`[role=tab][data-t="${["1","2","3"].includes(h)?h:"1"}"]`).click();
+</script></body></html>

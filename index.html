@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesa de Decisão V4: Investimentos e Liquidez</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f6;--card:#fff;--ink:#14213d;--mut:#5b6784;--line:#d6dce8;--acc:#0f766e;--acc2:#b45309;--bad:#b91c1c;--ok:#15803d;--c1:#0f766e;--c2:#2563eb;--c3:#7c3aed;--c4:#b45309;--c5:#be123c}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1424;--card:#16203a;--ink:#e8edf8;--mut:#9aa7c4;--line:#27345a;--acc:#2dd4bf;--acc2:#fbbf24;--bad:#f87171;--ok:#4ade80;--c1:#2dd4bf;--c2:#60a5fa;--c3:#a78bfa;--c4:#fbbf24;--c5:#fb7185}}
+:root[data-theme=dark]{--bg:#0e1424;--card:#16203a;--ink:#e8edf8;--mut:#9aa7c4;--line:#27345a;--acc:#2dd4bf;--acc2:#fbbf24;--bad:#f87171;--ok:#4ade80;--c1:#2dd4bf;--c2:#60a5fa;--c3:#a78bfa;--c4:#fbbf24;--c5:#fb7185}
+*{box-sizing:border-box}html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,sans-serif}
+.num,input,td.n{font-family:"JetBrains Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+header{padding:20px clamp(16px,4vw,48px) 8px;display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between}
+h1{margin:0;font-size:clamp(1.4rem,3vw,2rem);letter-spacing:-.02em}
+header p{margin:2px 0 0;color:var(--mut);max-width:60ch}
+nav{display:flex;gap:4px;flex-wrap:wrap;padding:8px clamp(16px,4vw,48px);position:sticky;top:0;background:var(--bg);z-index:5;border-bottom:1px solid var(--line)}
+nav button,.btn{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer}
+nav button[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.p{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+main{padding:16px clamp(16px,4vw,48px) 64px;max-width:1200px;margin:auto}
+section{display:none}section.on{display:block}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+.card h2{margin:0 0 8px;font-size:1.05rem}
+.big{font-size:1.9rem;font-weight:600}.mut{color:var(--mut);font-size:.9rem}
+label{display:grid;gap:3px;font-size:.88rem;color:var(--mut)}
+input,select{font-size:.95rem;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);width:100%}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}td.n,th.n{text-align:right}
+.alert{border-left:4px solid var(--acc2);padding:8px 12px;margin:8px 0;background:var(--bg);border-radius:0 6px 6px 0}
+.alert.bad{border-color:var(--bad)}.alert.ok{border-color:var(--ok)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+svg text{fill:var(--mut);font-size:11px}
+.news a{color:var(--ink);font-weight:600}.news li{margin:10px 0;list-style:none;padding-left:0}
+.tag{font-size:.75rem;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--mut);margin-left:6px}
+.tag.v{border-color:var(--ok);color:var(--ok)}.tag.s{border-color:var(--acc2);color:var(--acc2)}
+.kgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:12px 0}.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}.kpi .big{font-size:1.4rem}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}.chips button{font:inherit;font-size:.85rem;padding:4px 12px;border-radius:99px;border:1px solid var(--line);background:none;color:var(--mut);cursor:pointer}.chips button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ngrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.ncard{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;color:var(--ink);text-decoration:none}.ncard:hover{border-color:var(--acc)}
+.nimg{position:relative;aspect-ratio:16/9;background:var(--line);display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:.8rem}.nimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.nbody{padding:12px 14px;display:flex;flex-direction:column;gap:6px}.nt{font-weight:600;line-height:1.35}
+.ncard.hero{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}.ncard.hero .nt{font-size:1.3rem}.ncard.hero .nimg{aspect-ratio:auto;min-height:200px}
+@media (max-width:640px){.ncard.hero{grid-template-columns:1fr}}
+.impact{border:2px solid var(--acc);border-radius:12px;padding:14px 16px;background:var(--card);margin:0 0 14px}
+#chatBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.chatbox{position:fixed;right:16px;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:20;width:min(380px,calc(100vw - 32px));max-height:72vh;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.3)}
+.chatbox[hidden]{display:none}.chead{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}.chead button{font:inherit;font-size:.85rem;padding:3px 10px;border-radius:6px;border:1px solid var(--line);background:none;color:var(--ink);cursor:pointer}
+.clog{padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:120px}.msg{max-width:88%;padding:8px 12px;border-radius:12px;font-size:.92rem;white-space:pre-wrap}.msg.b{background:var(--bg);align-self:flex-start}.msg.u{background:var(--acc);color:#fff;align-self:flex-end}
+.cctl{padding:10px 12px;border-top:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap}.cctl button{font:inherit;font-size:.9rem;padding:7px 12px;border-radius:99px;border:1px solid var(--acc);background:none;color:var(--ink);cursor:pointer}.cctl form{display:flex;gap:6px;width:100%}.cctl input{flex:1}
+footer{color:var(--mut);font-size:.82rem;padding:0 clamp(16px,4vw,48px) 32px;max-width:1200px;margin:auto}
+@media (prefers-reduced-motion:no-preference){section.on{animation:f .18s ease-out}@keyframes f{from{opacity:.4}}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Mesa de Decisão: Investimentos e Liquidez</h1>
+  <p>Simulador baseado na sua planilha, com risco por Monte Carlo, otimizador de alocação, notícias com fonte e relatório diário em PDF.</p></div>
+  <div class="row"><a class="btn" href="enviar-email.html" style="text-decoration:none">Enviar por e-mail</a><button class="btn" id="theme">Tema</button><button class="btn p" id="pdfTop">Gerar relatório PDF</button></div>
+</header>
+<nav role="tablist" id="tabs"></nav>
+<main>
+<div id="daily" class="alert" hidden></div>
+
+<section id="painel">
+  <div class="grid" id="kpis"></div>
+  <div class="card" style="margin-top:14px"><h2>Projeção líquida do patrimônio (após IR e custódia)</h2><div id="chartProj"></div><div id="legend" class="row mut"></div></div>
+  <div class="card" style="margin-top:14px"><h2>Pontos de atenção da sua carteira</h2><div id="alerts"></div></div>
+</section>
+
+<section id="params">
+  <div class="card"><h2>Premissas (editáveis)</h2><div class="grid" id="pform"></div>
+  <div class="row" style="margin-top:12px"><button class="btn" id="btnBcb">Atualizar premissas com dados oficiais do BCB</button><span class="mut" id="bcbMsg"></span></div></div>
+</section>
+
+<section id="aloc">
+  <div class="card"><h2>Alocação por baldes de liquidez</h2><div class="scroll"><table id="atab"></table></div>
+  <p class="mut" id="asum"></p>
+  <div class="row"><button class="btn p" id="btnOpt">Sugerir alocação ótima</button><span class="mut">Maximiza retorno menos penalidade de risco, respeitando seu perfil, liquidez mínima e tetos.</span></div>
+  <div id="optOut"></div></div>
+</section>
+
+<section id="risco">
+  <div class="card"><h2>Simulação de Monte Carlo</h2>
+  <div class="row"><label>Horizonte<select id="hor"><option value="12">12 meses</option><option value="24">24 meses</option><option value="36">36 meses</option><option value="60">60 meses</option></select></label>
+  <label>Cenários<select id="npaths"><option>2000</option><option selected>10000</option><option>50000</option></select></label>
+  <button class="btn p" id="btnMC" style="align-self:end">Rodar simulação</button></div>
+  <div id="mcOut"></div></div>
+</section>
+
+<section id="news"><div id="newsDash"><p class="mut">Carregando…</p></div></section>
+
+<section id="dados">
+  <div class="grid">
+    <div class="card"><h2>Excel (.xlsx)</h2><p class="mut">Exporta premissas, alocação e projeção. Importa este formato ou a sua planilha original.</p>
+    <div class="row"><button class="btn" id="xOut">Exportar xlsx</button><label class="btn" style="display:inline-block">Importar xlsx<input type="file" id="xIn" accept=".xlsx,.xls" hidden></label></div></div>
+    <div class="card"><h2>Backup (.json)</h2><p class="mut">Cópia completa do estado, incluindo histórico de relatórios.</p>
+    <div class="row"><button class="btn" id="jOut">Baixar backup</button><label class="btn" style="display:inline-block">Restaurar backup<input type="file" id="jIn" accept=".json" hidden></label></div></div>
+    <div class="card"><h2>Relatório diário</h2><p class="mut">Resumo de mercado, carteira, risco e alertas em PDF.</p><button class="btn p" id="pdf2">Gerar PDF de hoje</button></div>
+  </div>
+</section>
+</main>
+<footer>Ferramenta educacional. Projeções dependem das premissas e não garantem resultados. Não constitui recomendação de investimento; confirme taxas e regras diretamente nas instituições e na CVM, B3 e Tesouro Nacional.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+"use strict";
+const $=s=>document.querySelector(s), KEY="mesa-decisao-v1";
+const brl=v=>v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
+const pct=(v,d=1)=>(v*100).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d})+"%";
+const DEF={p:{capital:100000,selic:.1375,cdi:.1365,ipca:.0463,acoes:.165,vol:.21,ipcaReal:.068,turbo:1.05,custodia:.0018,gastos:5000,perfil:"moderado",liqMin:.4,turboTeto:10000},
+ a:{caixinha:.40,turbo:0,selic:.20,ipca:.20,acoes:.20},reports:[]};
+DEF.a={caixinha:.25,turbo:.15,selic:.20,ipca:.20,acoes:.20};
+const ASSETS=[["caixinha","Caixinha 100% CDI","--c1","Imediata"],["turbo","Caixinha Turbo (teto)","--c2","Imediata"],["selic","Tesouro Selic","--c3","D+1"],["ipca","Tesouro IPCA+","--c4","D+1, risco de marcação"],["acoes","Ações (B3)","--c5","D+2"]];
+const PF={conservador:{cap:.10,lam:3},moderado:{cap:.30,lam:1.5},arrojado:{cap:.50,lam:.8}};
+let S;
+function load(){try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
+ if(!S||!S.p)S=JSON.parse(JSON.stringify(DEF));S.p={...DEF.p,...S.p};S.a={...DEF.a,...S.a};S.reports=S.reports||[]}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ---------- modelo financeiro (replica as fórmulas da planilha) ---------- */
+const ir=d=>d<=180?.225:d<=360?.2:d<=720?.175:.15;
+function gross(k,p){return {caixinha:p.cdi,turbo:p.cdi*p.turbo,selic:p.selic+.0006-p.custodia,ipca:(1+p.ipca)*(1+p.ipcaReal)-1,acoes:p.acoes}[k]}
+function factor(k,m,p){const g=gross(k,p),gr=Math.pow(1+g,m/12)-1;return 1+gr*(1-(k==="acoes"?.15:ir(m*30)))}
+function portfolio(m,a=S.a,p=S.p){return Object.keys(a).reduce((s,k)=>s+a[k]*factor(k,m,p),0)*p.capital}
+const SD=(k,p)=>({caixinha:.004,turbo:.004,selic:.006,ipca:.04,acoes:p.vol})[k];
+function stats(a,p,h=12){let mu=0;const w=Object.keys(a);w.forEach(k=>mu+=a[k]*(factor(k,h,p)-1));
+ let v=0;w.forEach(i=>w.forEach(j=>{const c=i===j?1:((i==="acoes"&&j==="ipca")||(i==="ipca"&&j==="acoes"))?.3:.1;v+=a[i]*a[j]*SD(i,p)*SD(j,p)*c}));
+ const liq=a.caixinha+a.turbo+a.selic;return{mu,sd:Math.sqrt(v),liq}}
+
+/* ---------- UI ---------- */
+const TABS=[["painel","Painel"],["params","Premissas"],["aloc","Alocação"],["risco","Risco"],["news","Notícias"],["dados","Dados e relatório"]];
+function tabs(){const n=$("#tabs");TABS.forEach(([id,t])=>{const b=document.createElement("button");b.textContent=t;b.role="tab";b.dataset.id=id;b.onclick=()=>go(id);n.append(b)});go(location.hash.slice(1)||"painel")}
+function go(id){if(!TABS.some(t=>t[0]===id))id="painel";document.querySelectorAll("section").forEach(s=>s.classList.toggle("on",s.id===id));
+ document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.id===id));history.replaceState(null,"","#"+id)}
+const FIELDS=[["capital","Capital (R$)",1],["cdi","CDI a.a.",0],["selic","Selic a.a.",0],["ipca","IPCA 12m",0],["acoes","Retorno ações a.a.",0],["vol","Volatilidade ações",0],["ipcaReal","Taxa real IPCA+",0],["turbo","Múltiplo CDI turbo",1.0],["custodia","Custódia B3 a.a.",0],["gastos","Gastos mensais (R$)",1],["turboTeto","Teto turbo (R$)",1],["liqMin","Liquidez mínima (0 a 1)",0]];
+function pform(){const f=$("#pform");f.innerHTML="";FIELDS.forEach(([k,t])=>{const l=document.createElement("label");l.textContent=t;const i=document.createElement("input");i.type="number";i.step="any";i.value=S.p[k];i.onchange=()=>{const v=parseFloat(i.value);if(isFinite(v)&&v>=0){S.p[k]=v;save();render()}else i.value=S.p[k]};l.append(i);f.append(l)});
+ const l=document.createElement("label");l.textContent="Perfil";const s=document.createElement("select");Object.keys(PF).forEach(o=>{const e=new Option(o,o);s.add(e)});s.value=S.p.perfil;s.onchange=()=>{S.p.perfil=s.value;save();render()};l.append(s);f.append(l)}
+function atab(){const t=$("#atab");t.innerHTML="<tr><th>Ativo</th><th>Liquidez</th><th class=n>%</th><th class=n>Valor</th><th class=n>Líquido 12m</th></tr>";
+ ASSETS.forEach(([k,n,c,l])=>{const r=t.insertRow();r.innerHTML=`<td>${n}</td><td>${l}</td><td class=n></td><td class=n>${brl(S.a[k]*S.p.capital)}</td><td class=n>${brl(S.a[k]*S.p.capital*(factor(k,12,S.p)-1))}</td>`;
+  const i=document.createElement("input");i.type="number";i.min=0;i.max=100;i.step=1;i.style.width="80px";i.value=Math.round(S.a[k]*100);i.onchange=()=>{const v=parseFloat(i.value);if(isFinite(v)&&v>=0&&v<=100){S.a[k]=v/100;save();render()}else i.value=Math.round(S.a[k]*100)};r.cells[2].append(i)});
+ const s=Object.values(S.a).reduce((x,y)=>x+y,0);$("#asum").textContent=`Soma: ${pct(s,0)}`+(Math.abs(s-1)>.001?" (ajuste para 100%)":"");}
+
+function lineChart(el,series,xs){const W=900,H=320,m={l:70,r:10,t:10,b:28};let mn=1e18,mx=-1e18;series.forEach(s=>s.v.forEach(y=>{mn=Math.min(mn,y);mx=Math.max(mx,y)}));
+ const X=i=>m.l+i*(W-m.l-m.r)/(xs.length-1),Y=y=>H-m.b-(y-mn)/(mx-mn||1)*(H-m.t-m.b);let g="";
+ for(let i=0;i<=4;i++){const y=mn+(mx-mn)*i/4;g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--line)"/><text x="${m.l-6}" y="${Y(y)+4}" text-anchor="end">${(y/1000).toFixed(0)}k</text>`}
+ xs.forEach((x,i)=>{if(x%12===0)g+=`<text x="${X(i)}" y="${H-8}" text-anchor="middle">${x}m</text>`});
+ series.forEach(s=>g+=`<polyline fill="none" stroke="var(${s.c})" stroke-width="${s.w||2}" points="${s.v.map((y,i)=>X(i)+","+Y(y)).join(" ")}"/>`);
+ el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Gráfico de projeção">${g}</svg>`}
+function projSeries(){const ms=[...Array(61).keys()];const ser=ASSETS.map(([k,n,c])=>({n,c,v:ms.map(m=>S.p.capital*factor(k,m,S.p))}));
+ ser.push({n:"Sua carteira",c:"--ink",w:3.5,v:ms.map(m=>portfolio(m))});return{ms,ser}}
+
+function alerts(){const p=S.p,a=S.a,o=[];const st=stats(a,p),sum=Object.values(a).reduce((x,y)=>x+y,0);
+ const liqV=(a.caixinha+a.turbo+a.selic)*p.capital,meses=liqV/p.gastos,real=(1+st.mu)/(1+p.ipca)-1,cap=PF[p.perfil].cap;
+ if(Math.abs(sum-1)>.001)o.push(["bad",`A alocação soma ${pct(sum,0)}; os resultados só valem com 100%.`]);
+ o.push([meses>=6?"ok":"bad",`Sua liquidez em até D+1 cobre ${meses.toFixed(1)} meses de gastos. Referência comum: 6 meses para renda estável, 12 para renda variável.`]);
+ o.push([real>0?"ok":"bad",`Retorno líquido esperado de ${pct(st.mu)} em 12m equivale a ${pct(real)} acima da inflação projetada.`]);
+ if(a.acoes>cap)o.push(["bad",`Ações em ${pct(a.acoes,0)} excedem o teto de ${pct(cap,0)} do perfil ${p.perfil}.`]);
+ if(a.turbo*p.capital>p.turboTeto)o.push(["bad",`O balde turbo (${brl(a.turbo*p.capital)}) passa do teto de ${brl(p.turboTeto)}: o excedente rende só 100% do CDI.`]);
+ if(a.ipca>.3)o.push(["",`Tesouro IPCA+ acima de 30% aumenta o risco de marcação a mercado se você precisar vender antes do vencimento.`]);
+ const tv=p.cdi*1,ts=p.selic+.0006-p.custodia;if(ts<tv)o.push(["",`Líquido de custódia, o Tesouro Selic (${pct(ts,2)}) rende menos que 100% do CDI (${pct(tv,2)}); abaixo de R$ 10 mil a custódia não incide.`]);
+ if(p.perfil==="conservador"&&st.sd>.05)o.push(["bad",`Risco anual estimado de ${pct(st.sd)} é alto para perfil conservador.`]);
+ return o}
+function render(){const p=S.p,st=stats(S.a,p),v12=portfolio(12),v60=portfolio(60);
+ $("#kpis").innerHTML=[["Valor em 12 meses",brl(v12),`ganho líquido ${brl(v12-p.capital)}`],["Valor em 60 meses",brl(v60),`${pct(Math.pow(v60/p.capital,1/5)-1)} a.a. líquido`],["Risco anual estimado",pct(st.sd),`liquidez D+1: ${pct(st.liq,0)}`],["Retorno real 12m",pct((1+st.mu)/(1+p.ipca)-1),`sobre IPCA de ${pct(p.ipca,2)}`]].map(([a,b,c])=>`<div class="card"><div class="mut">${a}</div><div class="big num">${b}</div><div class="mut">${c}</div></div>`).join("");
+ const {ms,ser}=projSeries();lineChart($("#chartProj"),ser,ms);$("#legend").innerHTML=ser.map(s=>`<span><b style="color:var(${s.c})">━</b> ${s.n}</span>`).join(" ");
+ $("#alerts").innerHTML=alerts().map(([c,t])=>`<div class="alert ${c}">${t}</div>`).join("");atab();dailyBanner();if(window.NEWS)newsView()}
+
+/* ---------- Monte Carlo ---------- */
+function randn(){let u=0,v=0;while(!u)u=Math.random();v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function runMC(h,n){const p=S.p,a=S.a,y=h/12,out=new Float64Array(n);
+ for(let i=0;i<n;i++){const z=randn(),zi=.3*z+Math.sqrt(1-.09)*randn();let tot=0;
+  for(const k in a){if(!a[k])continue;let f;
+   if(k==="acoes"){const mu=Math.log(1+p.acoes)-.5*p.vol*p.vol;const g=Math.exp(mu*y+p.vol*Math.sqrt(y)*z)-1;f=1+(g>0?g*.85:g)}
+   else if(k==="ipca"){const g=Math.pow(1+gross(k,p),y)-1+.04/Math.sqrt(y)*zi*Math.min(1,y);f=1+(g>0?g*(1-ir(h*30)):g)}
+   else{const r=gross(k,p)+SD(k,p)*randn(),g=Math.pow(1+r,y)-1;f=1+g*(1-ir(h*30))}
+   tot+=a[k]*f}
+  out[i]=tot*p.capital}
+ return out.sort()}
+function hist(arr,bins=40){const mn=arr[0],mx=arr[arr.length-1],c=Array(bins).fill(0);arr.forEach(v=>c[Math.min(bins-1,Math.floor((v-mn)/(mx-mn||1)*bins))]++);const M=Math.max(...c),W=900,H=200;
+ return `<svg viewBox="0 0 ${W} ${H+24}" width="100%" role="img" aria-label="Histograma de resultados">${c.map((v,i)=>`<rect x="${i*W/bins+1}" y="${H-v/M*H}" width="${W/bins-2}" height="${v/M*H}" fill="${(mn+(i+.5)*(mx-mn)/bins)<S.p.capital?"var(--bad)":"var(--acc)"}"/>`).join("")}<text x="0" y="${H+16}">${brl(mn)}</text><text x="${W}" y="${H+16}" text-anchor="end">${brl(mx)}</text></svg>`}
+let lastMC=null;
+function mc(){const h=+$("#hor").value,n=+$("#npaths").value;$("#mcOut").textContent="Calculando…";
+ setTimeout(()=>{const r=runMC(h,n),q=x=>r[Math.floor(x*(r.length-1))],cap=S.p.capital;
+  const loss=r.filter(v=>v<cap).length/r.length;lastMC={h,n,p5:q(.05),p10:q(.1),p50:q(.5),p90:q(.9),p95:q(.95),loss,mean:r.reduce((s,v)=>s+v,0)/r.length};
+  const L=lastMC;$("#mcOut").innerHTML=`<div class="grid" style="margin:12px 0">${[["Mediana",L.p50],["Pessimista (P10)",L.p10],["Muito pessimista (P5)",L.p5],["Otimista (P90)",L.p90]].map(([a,b])=>`<div class="card"><div class="mut">${a}</div><div class="big num">${brl(b)}</div></div>`).join("")}</div>
+  <p>Probabilidade de terminar abaixo do capital investido: <b class="num">${pct(L.loss)}</b>. Em 1 de cada 10 cenários o resultado fica abaixo de ${brl(L.p10)}.</p>${hist(r)}
+  <p class="mut">Premissas do modelo: ações com retorno lognormal (média e volatilidade das Premissas), renda fixa com ruído pequeno, IPCA+ com ruído de marcação a mercado de 4% a.a., correlação 0,3 entre ações e IPCA+. É um modelo simplificado; eventos extremos ocorrem mais do que a distribuição normal sugere.</p>`},20)}
+
+/* ---------- otimizador ---------- */
+function optimize(){const p=S.p,ks=ASSETS.map(a=>a[0]),pf=PF[p.perfil];let best=null;
+ for(let t=0;t<20000;t++){const w=ks.map(()=>Math.pow(Math.random(),2.2)),s=w.reduce((x,y)=>x+y,0),a={};ks.forEach((k,i)=>a[k]=Math.round(w[i]/s*20)/20);
+  const sm=Object.values(a).reduce((x,y)=>x+y,0);if(Math.abs(sm-1)>.001)continue;
+  if(a.acoes>pf.cap+1e-9||a.turbo*p.capital>p.turboTeto||a.caixinha+a.turbo+a.selic<p.liqMin)continue;
+  const st=stats(a,p),sc=st.mu-pf.lam*st.sd*st.sd*2;if(!best||sc>best.sc)best={a,sc,...st}}
+ const o=$("#optOut");if(!best){o.innerHTML='<div class="alert bad">Nenhuma carteira atende às restrições. Reduza a liquidez mínima ou aumente o teto.</div>';return}
+ const cur=stats(S.a,p);o.innerHTML=`<div class="alert ok"><b>Sugestão para perfil ${p.perfil}:</b> ${ASSETS.map(([k,n])=>`${n} ${pct(best.a[k],0)}`).join(", ")}.<br>Retorno líquido 12m: ${pct(best.mu)} (atual ${pct(cur.mu)}). Risco anual: ${pct(best.sd)} (atual ${pct(cur.sd)}). Liquidez D+1: ${pct(best.liq,0)}.</div><button class="btn" id="apply">Aplicar esta alocação</button><p class="mut">Otimização por busca aleatória sobre retornos esperados da própria planilha: o resultado herda o erro das suas premissas.</p>`;
+ $("#apply").onclick=()=>{S.a=best.a;save();render();pformTab()}}
+const pformTab=()=>{};
+
+/* ---------- notícias (sem API: news.json gerado por GitHub Actions a partir de RSS) ---------- */
+let NF="Tudo";const CATS=["Tudo","Juros e inflação","Governo e fiscal","Empresas","Câmbio","Geral"];
+function E(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+const safeUrl=u=>/^https?:\/\//.test(u||"")?u:"";
+const ANAME=Object.fromEntries(ASSETS.map(a=>[a[0],a[1]]));
+async function news(){const D=$("#newsDash");try{const r=await fetch("news.json?"+Date.now());if(!r.ok)throw 0;window.NEWS=await r.json();newsView()}catch(e){D.replaceChildren(E("p","mut","Não foi possível ler news.json. No GitHub Pages ele é gerado pelo workflow; localmente, abra via servidor e rode git pull."))}}
+function ncard(i,big){const a=E("a","ncard"+(big?" hero":""));a.href=safeUrl(i.link);a.target="_blank";a.rel="noopener noreferrer";
+ const im=E("div","nimg","Sem imagem");if(safeUrl(i.image)){const g=new Image();g.loading="lazy";g.referrerPolicy="no-referrer";g.alt="";g.onerror=()=>g.remove();g.src=i.image;im.append(g)}
+ const b=E("div","nbody"),t=E("span","tag "+(i.sources>1?"v":"s"),i.sources>1?`${i.sources} fontes concordam`:"fonte única");t.style.alignSelf="flex-start";
+ b.append(E("span","mut",i.category||"Geral"),E("div","nt",i.title),t,E("div","mut",`${i.source} · ${new Date(i.published).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}`));
+ const hit=(i.assets||[]).filter(k=>S.a[k]>0).map(k=>ANAME[k]);if(hit.length)b.append(E("div","mut","Pode tocar: "+hit.join(", ")));
+ a.append(im,b);return a}
+function newsView(){const d=window.NEWS,D=$("#newsDash");if(!d)return;D.replaceChildren();
+ const age=(Date.now()-new Date(d.generated_at))/36e5;
+ D.append(E("p","mut",`Atualizado em ${new Date(d.generated_at).toLocaleString("pt-BR")} (há ${Math.round(age)} h). Só título, fonte, data, imagem e link originais, sem resumo gerado: confira sempre na fonte.`+(age>30?" Atenção: dados com mais de 30 horas, verifique o workflow no GitHub.":"")));
+ const ind=d.indicators||{},nm={selic:"Selic meta",cdi:"CDI",ipca12:"IPCA 12m",dolar:"Dólar (venda)"},kg=E("div","kgrid");
+ Object.keys(nm).forEach(k=>{if(!ind[k])return;const c=E("div","kpi");c.append(E("div","mut",nm[k]),E("div","big num",k==="dolar"?"R$ "+ind[k].v.toLocaleString("pt-BR",{minimumFractionDigits:2}):pct(ind[k].v/100,2)),E("div","mut","BCB · "+ind[k].d));kg.append(c)});if(kg.children.length)D.append(kg);
+ const ch=E("div","chips");CATS.forEach(c=>{const b=E("button",null,c);b.setAttribute("aria-pressed",c===NF);b.onclick=()=>{NF=c;newsView()};ch.append(b)});D.append(ch);
+ const all=d.items||[],list=all.filter(i=>NF==="Tudo"||i.category===NF);
+ const mine=all.filter(i=>(i.assets||[]).some(k=>S.a[k]>0)),own=ASSETS.filter(a=>S.a[a[0]]>0&&all.some(i=>(i.assets||[]).includes(a[0])));
+ if(mine.length){const im=E("div","impact");im.append(E("b",null,"Impacto na carteira (indicação automática)"),E("div","mut",`${mine.length} notícias recentes tocam: ${own.map(a=>`${a[1]} (${pct(S.a[a[0]],0)})`).join(", ")}. A ligação é feita por palavras-chave no título, não é análise de causa e efeito.`));const bt=E("button","btn","Rodar Monte Carlo");bt.style.marginTop="8px";bt.onclick=()=>{go("risco");mc()};im.append(bt);D.append(im)}
+ if(!list.length){D.append(E("p","mut",all.length?"Nenhuma notícia nesta categoria.":"Nenhuma notícia ainda. Rode o workflow “Atualizar notícias” na aba Actions."));return}
+ const hero=list.find(i=>i.sources>1)||list[0],g=E("div","ngrid");g.append(ncard(hero,true));list.filter(i=>i!==hero).slice(0,18).forEach(i=>g.append(ncard(i)));D.append(g)}
+async function bcb(){const m=$("#bcbMsg");m.textContent="Consultando…";
+ const nd=window.NEWS&&NEWS.indicators;if(nd&&nd.selic&&nd.cdi){S.p.selic=nd.selic.v/100;S.p.cdi=nd.cdi.v/100;if(nd.ipca12)S.p.ipca=nd.ipca12.v/100;save();pform();render();m.textContent=`Selic ${nd.selic.v}% e CDI ${nd.cdi.v}%`+(nd.ipca12?`, IPCA 12m ${nd.ipca12.v}%`:"")+" (Banco Central, coletado pelo workflow).";return}
+ const g=async c=>{const r=await fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.${c}/dados/ultimos/1?formato=json`);const j=await r.json();return{v:parseFloat(j[0].valor),d:j[0].data}};
+ try{const [se,cd]=await Promise.all([g(432),g(4389)]);S.p.selic=se.v/100;S.p.cdi=cd.v/100;save();pform();render();m.textContent=`Selic ${se.v}% (${se.d}), CDI ${cd.v}% (${cd.d}). Fonte: Banco Central, série SGS. Confira o IPCA 12m no IBGE e atualize manualmente.`}
+ catch(e){m.textContent="Falha ao consultar o BCB. Preencha manualmente."}}
+
+/* ---------- importar / exportar ---------- */
+function dl(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)}
+const today=()=>new Date().toISOString().slice(0,10);
+function xOut(){const wb=XLSX.utils.book_new(),p=S.p;
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Parametro","Valor"],...Object.entries(p)]),"Parametros");
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Ativo","Percentual","Valor (R$)","Liquido 12m (R$)"],...ASSETS.map(([k,n])=>[n,S.a[k],S.a[k]*p.capital,S.a[k]*p.capital*(factor(k,12,p)-1)]),["Chave_ativos",JSON.stringify(Object.keys(S.a))]]),"Alocacao");
+ const {ms,ser}=projSeries();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([["Mes",...ser.map(s=>s.n)],...ms.map((m,i)=>[m,...ser.map(s=>Math.round(s.v[i]*100)/100)])]),"Projecao");
+ XLSX.writeFile(wb,`mesa-decisao-${today()}.xlsx`)}
+function xIn(f){const r=new FileReader();r.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:"array"}),rows=n=>wb.Sheets[n]?XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1}):null;let msg="";
+  const pa=rows("Parametros"),al=rows("Alocacao"),po=rows("1_Parametros_Resumo"),pm=rows("4_Matriz_Decisao_Alocacao");
+  if(pa){pa.slice(1).forEach(([k,v])=>{if(k in S.p){S.p[k]=k==="perfil"?String(v):Number(v)}});if(al)ASSETS.forEach(([k],i)=>{const v=al[i+1]&&Number(al[i+1][1]);if(isFinite(v))S.a[k]=v});msg="Formato desta página importado."}
+  else if(po){const g=i=>Number(po[i]&&po[i][1]);const m={capital:4,selic:5,cdi:6,ipca:7,acoes:8,vol:10};Object.entries(m).forEach(([k,i])=>{const v=g(i);if(isFinite(v)&&v>0)S.p[k]=v});
+   if(pm){const k=["caixinha","turbo","selic","ipca","acoes"];k.forEach((x,i)=>{const v=Number(pm[i+3]&&pm[i+3][2]);if(isFinite(v))S.a[x]=v})}msg="Planilha original importada (premissas e alocação)."}
+  else throw 0;save();pform();render();alert(msg)}catch(err){alert("Arquivo não reconhecido. Use um .xlsx exportado desta página ou a planilha original.")}};r.readAsArrayBuffer(f)}
+function jOut(){dl(new Blob([JSON.stringify({v:1,saved:new Date().toISOString(),...S},null,1)],{type:"application/json"}),`mesa-backup-${today()}.json`)}
+function jIn(f){const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(!d.p||!d.a)throw 0;S={p:{...DEF.p,...d.p},a:{...DEF.a,...d.a},reports:d.reports||[]};save();pform();render();alert("Backup restaurado.")}catch(x){alert("Backup inválido.")}};r.readAsText(f)}
+
+/* ---------- PDF diário ---------- */
+function pdf(asFile,kind){kind=kind||"carteira";const {jsPDF}=window.jspdf;if(!jsPDF){alert("Biblioteca de PDF não carregou. Verifique a conexão.");return}
+ const d=new jsPDF(),p=S.p,st=stats(S.a,p),now=new Date();let y=18;
+ d.setFontSize(16);d.text("Relatorio diario de investimentos e liquidez",14,y);d.setFontSize(9);d.text("Gerado em "+now.toLocaleString("pt-BR"),14,y+6);y+=14;
+ const tb=(h,b)=>{d.autoTable({startY:y,head:[h],body:b,styles:{fontSize:8.5},headStyles:{fillColor:[15,118,110]},margin:{left:14,right:14}});y=d.lastAutoTable.finalY+8};
+ tb(["Premissa","Valor"],[["Capital",brl(p.capital)],["CDI / Selic",`${pct(p.cdi,2)} / ${pct(p.selic,2)}`],["IPCA 12m",pct(p.ipca,2)],["Perfil",p.perfil]]);
+ if(kind!=="mercado")tb(["Ativo","%","Valor","Liquido 12m"],ASSETS.map(([k,n])=>[n,pct(S.a[k],0),brl(S.a[k]*p.capital),brl(S.a[k]*p.capital*(factor(k,12,p)-1))]));
+ if(kind!=="mercado")tb(["Indicador","Resultado"],[["Valor em 12 meses",brl(portfolio(12))],["Valor em 60 meses",brl(portfolio(60))],["Retorno liquido esperado 12m",pct(st.mu)],["Risco anual estimado",pct(st.sd)],["Liquidez D+1",pct(st.liq,0)],...(lastMC?[[`Monte Carlo ${lastMC.h}m: P10 / mediana / P90`,`${brl(lastMC.p10)} / ${brl(lastMC.p50)} / ${brl(lastMC.p90)}`],["Prob. de perda",pct(lastMC.loss)]]:[])]);
+ if(kind!=="mercado")tb(["Pontos de atencao"],alerts().map(a=>[a[1]]));
+ const it=(window.NEWS&&NEWS.items||[]).slice(0,10);if(it.length)tb(["Manchetes (titulo, fonte, data)"],it.map(i=>[`${i.title} | ${i.source} | ${new Date(i.published).toLocaleDateString("pt-BR")}${i.sources>1?" | "+i.sources+" fontes":""}`]));
+ d.setFontSize(7.5);d.text(d.splitTextToSize("Material educacional. Projecoes dependem das premissas e nao garantem resultados. Nao constitui recomendacao de investimento.",180),14,Math.min(y,285));
+ const fn=`relatorio-${today()}.pdf`;if(asFile)return new File([d.output("blob")],fn,{type:"application/pdf"});d.save(fn);S.reports=(S.reports||[]).concat(today()).slice(-90);save();dailyBanner()}
+function dailyBanner(){const b=$("#daily"),done=(S.reports||[]).includes(today());b.hidden=done;if(!done)b.innerHTML="O relatório de hoje ainda não foi gerado. <button class='btn p' id='pdfB'>Gerar agora</button>";const x=$("#pdfB");if(x)x.onclick=()=>pdf()}
+
+/* ---------- chat de relatório (V4) ---------- */
+const EMAIL_ENDPOINT="";
+const normPhone=v=>{let d=String(v).replace(/\D/g,"");if(d.length===10||d.length===11)d="55"+d;return /^55\d{10,11}$/.test(d)?d:""};
+const okMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+const canShareFiles=()=>{try{return !!(navigator.canShare&&navigator.canShare({files:[new File(["x"],"x.pdf",{type:"application/pdf"})]}))}catch(e){return false}};
+function shortText(kind){const p=S.p,N=window.NEWS||{},ind=N.indicators||{},L=["Relatório de "+new Date().toLocaleDateString("pt-BR")];
+ if(kind==="carteira"){const st=stats(S.a,p);L.push(`Carteira de ${brl(p.capital)}: ${brl(portfolio(12))} em 12 meses (líquido), risco anual estimado ${pct(st.sd)}.`)}
+ L.push(`Selic ${ind.selic?ind.selic.v.toLocaleString("pt-BR")+"%":pct(p.selic,2)}, CDI ${ind.cdi?ind.cdi.v.toLocaleString("pt-BR")+"%":pct(p.cdi,2)}.`);
+ (N.items||[]).slice(0,3).forEach(i=>L.push("- "+i.title+" ("+i.source+")"));L.push("Material educacional, não é recomendação.");return L.join("\n")}
+function chatInit(){let ctx={};
+ const btn=E("button","btn p","Pedir relatório");btn.id="chatBtn";btn.setAttribute("aria-expanded","false");
+ const box=E("div","chatbox");box.hidden=true;box.setAttribute("role","dialog");box.setAttribute("aria-label","Assistente de relatório");
+ const head=E("div","chead"),xb=E("button",null,"Fechar");head.append(E("b",null,"Assistente de relatório"),xb);
+ const log=E("div","clog");log.setAttribute("aria-live","polite");const ctl=E("div","cctl");box.append(head,log,ctl);document.body.append(btn,box);
+ const say=(w,t)=>{log.append(E("div","msg "+w,t));log.scrollTop=log.scrollHeight};
+ const opts=(list,cb)=>{ctl.replaceChildren();list.forEach(l=>{const b=E("button",null,l);b.onclick=()=>{say("u",l);cb(l)};ctl.append(b)})};
+ const act=list=>{ctl.replaceChildren();list.concat([["Pedir outro relatório",start]]).forEach(([l,f])=>{const b=E("button",null,l);b.onclick=f;ctl.append(b)})};
+ const ask=(ph,norm,err,cb)=>{ctl.replaceChildren();const f=E("form"),i=E("input");i.placeholder=ph;i.setAttribute("aria-label",ph);const s=E("button",null,"Enviar");s.type="submit";f.append(i,s);
+  f.onsubmit=e=>{e.preventDefault();const v=norm(i.value.trim());if(!v){say("b",err);i.focus();return}say("u",i.value.trim());cb(v)};ctl.append(f);i.focus()};
+ function start(){ctx={};log.replaceChildren();say("b","Oi! Eu monto o seu relatório. Seus dados de contato não ficam salvos no site. Qual versão você quer?");opts(["Carteira completa","Só mercado"],v=>{ctx.kind=v==="Só mercado"?"mercado":"carteira";say("b","Como você quer receber?");opts(["WhatsApp","E-mail","Só baixar o PDF"],c=>c==="WhatsApp"?wa():c==="E-mail"?mail():(say("b","Aqui está."),act([["Baixar PDF",()=>pdf(false,ctx.kind)]])))})}
+ function wa(){if(canShareFiles()){say("b","Toque no botão, escolha o WhatsApp e depois o contato (pode ser você, em Mensagem para mim). O PDF segue anexado.");
+   act([["Compartilhar PDF no WhatsApp",async()=>{try{await navigator.share({files:[pdf(true,ctx.kind)],title:"Relatório",text:shortText(ctx.kind)})}catch(e){if(e.name!=="AbortError")say("b","Não consegui abrir o compartilhamento. Baixe o PDF e anexe no WhatsApp.")}}],["Baixar PDF",()=>pdf(false,ctx.kind)]])}
+  else{say("b","Este navegador não compartilha arquivos. Informe seu número com DDD: eu abro o WhatsApp com o resumo e você anexa o PDF baixado.");
+   ask("(11) 91234-5678",normPhone,"Número inválido. Use DDD e 8 ou 9 dígitos.",n=>{say("b","Primeiro baixe o PDF, depois abra o WhatsApp e anexe o arquivo.");act([["1. Baixar PDF",()=>pdf(false,ctx.kind)],["2. Abrir WhatsApp",()=>window.open("https://wa.me/"+n+"?text="+encodeURIComponent(shortText(ctx.kind)),"_blank","noopener")]])})}}
+ function mail(){say("b","Qual é o seu e-mail?");ask("nome@exemplo.com",v=>okMail(v)?v:"","E-mail inválido. Confira o endereço.",em=>{
+   if(EMAIL_ENDPOINT){act([["Baixar PDF da carteira",()=>pdf(false,"carteira")]]);fetch(EMAIL_ENDPOINT,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({email:em})}).then(()=>say("b","Pedido enviado para "+em+". Em instantes chega um resumo de mercado; olhe também o spam. A carteira completa vai só pelo PDF.")).catch(()=>say("b","Não consegui contatar o envio automático. Use o PDF."))}
+   else{say("b","Baixe o PDF e abra o app de e-mail; o texto já vai preenchido. Anexe o arquivo baixado.");act([["1. Baixar PDF",()=>pdf(false,ctx.kind)],["2. Abrir app de e-mail",()=>{location.href="mailto:"+em+"?subject="+encodeURIComponent("Relatório "+new Date().toLocaleDateString("pt-BR"))+"&body="+encodeURIComponent(shortText(ctx.kind).slice(0,1200))}]])}})}
+ const close=()=>{box.hidden=true;btn.setAttribute("aria-expanded","false");btn.focus()};
+ btn.onclick=()=>{if(box.hidden){box.hidden=false;btn.setAttribute("aria-expanded","true");if(!log.children.length)start()}else close()};
+ xb.onclick=close;box.addEventListener("keydown",e=>{if(e.key==="Escape")close()})}
+
+load();tabs();pform();render();news();chatInit();
+$("#btnMC").onclick=mc;$("#btnOpt").onclick=optimize;$("#btnBcb").onclick=bcb;$("#pdfTop").onclick=()=>pdf();$("#pdf2").onclick=()=>pdf();
+$("#xOut").onclick=xOut;$("#xIn").onchange=e=>e.target.files[0]&&xIn(e.target.files[0]);$("#jOut").onclick=jOut;$("#jIn").onchange=e=>e.target.files[0]&&jIn(e.target.files[0]);
+$("#theme").onclick=()=>{const r=document.documentElement,dk=matchMedia("(prefers-color-scheme:dark)").matches,cur=r.dataset.theme||(dk?"dark":"light");r.dataset.theme=cur==="dark"?"light":"dark"};
+</script>
+</body>
+</html>
