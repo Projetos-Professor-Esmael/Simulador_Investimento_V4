@@ -1,0 +1,17 @@
+name: Enviar relatório por e-mail
+on:
+  schedule:
+    - cron: "30 12 * * 1-5"   # 09:30 em Brasília, depois da coleta de notícias das 12:00 UTC
+  workflow_dispatch:
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python scripts/send_report.py
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
